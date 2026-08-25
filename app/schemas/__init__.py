@@ -1,3 +1,8 @@
+from app.schemas.application import (
+    ApplicationCreate,
+    ApplicationRead,
+    ApplicationStatusUpdate,
+)
 from app.schemas.vacancy import (
     VacancyCreate,
     VacancyRead,
@@ -5,6 +10,9 @@ from app.schemas.vacancy import (
 )
 
 __all__ = [
+    "ApplicationCreate",
+    "ApplicationRead",
+    "ApplicationStatusUpdate",
     "VacancyCreate",
     "VacancyRead",
     "VacancyUpdate",

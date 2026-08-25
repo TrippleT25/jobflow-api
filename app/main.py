@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
+from app.routers.applications import router as applications_router
 from app.routers.vacancies import router as vacancies_router
-
 
 app = FastAPI(
     title="JobFlow API",
@@ -16,3 +16,4 @@ async def health_check():
 
 
 app.include_router(vacancies_router)
+app.include_router(applications_router)
