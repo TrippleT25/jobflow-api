@@ -15,7 +15,7 @@ from app.services.vacancies import (
     get_vacancy_service,
     update_vacancy_service,
 )
-
+from app.queue import create_redis_pool
 
 router = APIRouter(
     prefix="/vacancies",
@@ -116,3 +116,30 @@ async def delete_vacancy(
         db=db,
         vacancy_id=vacancy_id,
     )
+
+@router.post(
+    "/{vacancy_id}/analyze",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def analyze_vacancy(
+    vacancy_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    vacancy = await get_vacancy_service(
+        db=db,
+        vacancy_id=vacancy_id,
+    )
+
+    redis = await create_redis_pool()
+
+    job = await redis.enqueue_job(
+        "analyze_vacancy",
+        vacancy.id,
+    )
+
+    await redis.aclose()
+
+    return {
+        "job_id": job.job_id,
+        "status": "queued",
+    }
