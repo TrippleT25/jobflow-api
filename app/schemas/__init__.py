@@ -16,4 +16,5 @@ __all__ = [
     "VacancyCreate",
     "VacancyRead",
     "VacancyUpdate",
+    "VacancyList"
 ]

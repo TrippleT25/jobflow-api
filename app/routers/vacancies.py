@@ -1,13 +1,10 @@
-from fastapi import (
-    APIRouter,
-    Depends,
-    status,
-)
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas.vacancy import (
     VacancyCreate,
+    VacancyList,
     VacancyRead,
     VacancyUpdate,
 )
@@ -43,12 +40,38 @@ async def create_vacancy(
 
 @router.get(
     "",
-    response_model=list[VacancyRead],
+    response_model=VacancyList,
 )
 async def get_vacancies(
+    search: str | None = None,
+    company: str | None = None,
+    location: str | None = None,
+    work_format: str | None = None,
+    salary_from: int | None = Query(
+        default=None,
+        ge=0,
+    ),
+    limit: int = Query(
+        default=20,
+        ge=1,
+        le=100,
+    ),
+    offset: int = Query(
+        default=0,
+        ge=0,
+    ),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_vacancies_service(db)
+    return await get_vacancies_service(
+        db=db,
+        search=search,
+        company=company,
+        location=location,
+        work_format=work_format,
+        salary_from=salary_from,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get(

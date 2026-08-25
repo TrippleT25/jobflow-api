@@ -35,12 +35,6 @@ async def create_vacancy_service(
     )
 
 
-async def get_vacancies_service(
-    db: AsyncSession,
-) -> list[Vacancy]:
-    return await get_vacancies(db)
-
-
 async def get_vacancy_service(
     db: AsyncSession,
     vacancy_id: int,
@@ -57,6 +51,35 @@ async def get_vacancy_service(
         )
 
     return vacancy
+
+
+async def get_vacancies_service(
+    db: AsyncSession,
+    search: str | None = None,
+    company: str | None = None,
+    location: str | None = None,
+    work_format: str | None = None,
+    salary_from: int | None = None,
+    limit: int = 20,
+    offset: int = 0,
+):
+    items, total = await get_vacancies(
+        db=db,
+        search=search,
+        company=company,
+        location=location,
+        work_format=work_format,
+        salary_from=salary_from,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 async def update_vacancy_service(
