@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from app.routers.vacancies import router as vacancies_router
+
 
 app = FastAPI(
     title="JobFlow API",
@@ -11,3 +13,6 @@ app = FastAPI(
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+
+app.include_router(vacancies_router)

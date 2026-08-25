@@ -1,0 +1,95 @@
+from fastapi import (
+    APIRouter,
+    Depends,
+    status,
+)
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.schemas.vacancy import (
+    VacancyCreate,
+    VacancyRead,
+    VacancyUpdate,
+)
+from app.services.vacancies import (
+    create_vacancy_service,
+    delete_vacancy_service,
+    get_vacancies_service,
+    get_vacancy_service,
+    update_vacancy_service,
+)
+
+
+router = APIRouter(
+    prefix="/vacancies",
+    tags=["Vacancies"],
+)
+
+
+@router.post(
+    "",
+    response_model=VacancyRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_vacancy(
+    data: VacancyCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    return await create_vacancy_service(
+        db=db,
+        data=data,
+    )
+
+
+@router.get(
+    "",
+    response_model=list[VacancyRead],
+)
+async def get_vacancies(
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_vacancies_service(db)
+
+
+@router.get(
+    "/{vacancy_id}",
+    response_model=VacancyRead,
+)
+async def get_vacancy(
+    vacancy_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_vacancy_service(
+        db=db,
+        vacancy_id=vacancy_id,
+    )
+
+
+@router.patch(
+    "/{vacancy_id}",
+    response_model=VacancyRead,
+)
+async def update_vacancy(
+    vacancy_id: int,
+    data: VacancyUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    return await update_vacancy_service(
+        db=db,
+        vacancy_id=vacancy_id,
+        data=data,
+    )
+
+
+@router.delete(
+    "/{vacancy_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_vacancy(
+    vacancy_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    await delete_vacancy_service(
+        db=db,
+        vacancy_id=vacancy_id,
+    )
