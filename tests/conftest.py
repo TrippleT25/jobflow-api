@@ -56,6 +56,48 @@ app.dependency_overrides[
 ] = override_get_current_user
 
 
+@pytest.fixture
+def use_real_auth():
+    original_override = app.dependency_overrides.pop(
+        get_current_user,
+        None,
+    )
+
+    yield
+
+    if original_override is not None:
+        app.dependency_overrides[
+            get_current_user
+        ] = original_override
+
+
+@pytest.fixture
+def act_as_user():
+    original_override = app.dependency_overrides[
+        get_current_user
+    ]
+
+    def set_current_user(
+        user_id: int,
+        email: str,
+    ) -> None:
+        async def override() -> User:
+            return User(
+                id=user_id,
+                email=email,
+                hashed_password="not-used-in-tests",
+                is_active=True,
+            )
+
+        app.dependency_overrides[get_current_user] = override
+
+    yield set_current_user
+
+    app.dependency_overrides[
+        get_current_user
+    ] = original_override
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def prepare_database():
     async with test_engine.begin() as connection:
@@ -65,7 +107,6 @@ async def prepare_database():
     async with TestingSessionLocal() as session:
         session.add(
             User(
-                id=1,
                 email="test@example.com",
                 hashed_password="not-used-in-tests",
                 is_active=True,

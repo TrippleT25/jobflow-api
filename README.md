@@ -7,6 +7,9 @@ The project demonstrates a production-oriented Python backend with asynchronous 
 ## Features
 
 * Vacancy CRUD
+* JWT authentication
+* Per-user vacancy ownership
+* User dashboard statistics
 * Vacancy search and filtering
 * Pagination
 * Salary validation
@@ -115,24 +118,32 @@ app/
 │
 ├── models/
 │   ├── vacancy.py
-│   └── application.py
+│   ├── application.py
+│   └── user.py
 │
 ├── schemas/
 │   ├── vacancy.py
 │   ├── application.py
-│   └── job.py
+│   ├── dashboard.py
+│   ├── job.py
+│   └── user.py
 │
 ├── repositories/
 │   ├── vacancies.py
-│   └── applications.py
+│   ├── applications.py
+│   ├── dashboard.py
+│   └── users.py
 │
 ├── services/
 │   ├── vacancies.py
-│   └── applications.py
+│   ├── applications.py
+│   └── dashboard.py
 │
 ├── routers/
 │   ├── vacancies.py
-│   └── applications.py
+│   ├── applications.py
+│   ├── auth.py
+│   └── dashboard.py
 │
 ├── integrations/
 │   └── company_lookup.py
@@ -147,6 +158,10 @@ tests/
 ```
 
 ## Vacancies
+
+All vacancy endpoints require a bearer token. Vacancies are private to their
+owner: one user cannot list, read, update, delete, analyze, or inspect company
+information for another user's vacancies.
 
 Example vacancy:
 
@@ -266,6 +281,39 @@ The cache is invalidated when a vacancy is:
 * created
 * updated
 * deleted
+
+Cache keys include the authenticated owner, so cached vacancy lists cannot leak
+between users.
+
+## Authentication
+
+Register and sign in using:
+
+```text
+POST /auth/register
+POST /auth/login
+GET  /auth/me
+```
+
+`POST /auth/login` uses the OAuth2 password form: provide the email in the
+`username` field. Copy the returned JWT into Swagger's **Authorize** dialog or
+send it as a bearer token:
+
+```text
+Authorization: Bearer YOUR_ACCESS_TOKEN
+```
+
+## Dashboard Statistics
+
+Authenticated users can retrieve statistics calculated only from their own
+vacancies and applications:
+
+```text
+GET /dashboard/statistics
+```
+
+The response includes total vacancies and applications, offers, rejections,
+current interview stages, and counts for every pipeline status.
 
 ## Background Jobs
 
@@ -394,6 +442,8 @@ Create `.env`:
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:YOUR_PASSWORD@localhost:5432/jobflow
 REDIS_URL=redis://localhost:6379/0
+SECRET_KEY=replace-with-a-long-random-secret
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
 Do not commit `.env`.
@@ -473,6 +523,9 @@ Tests cover:
 * forbidden status transitions
 * full application pipeline
 * terminal statuses
+* registration, login and current-user lookup
+* per-user vacancy isolation
+* dashboard aggregation and ownership isolation
 
 Redis is mocked where external infrastructure is not required for the test.
 
@@ -506,17 +559,9 @@ This project focuses on:
 * automated testing
 * maintainable API design
 
-## Development Status
+## Release
 
-The project is under active development.
-
-Planned improvements:
-
-* authentication
-* per-user vacancy ownership
-* application statistics
-* rate limiting
-* improved cache strategy
-* additional background tasks
-* test coverage reporting
-* deployment
+JobFlow API v1.0.0 is the first complete release of the project. It includes
+authentication, per-user data isolation, vacancy and application workflows,
+dashboard statistics, caching, background processing, migrations, integration
+tests, and CI.
