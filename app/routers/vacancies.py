@@ -18,6 +18,7 @@ from app.services.vacancies import (
     get_vacancy_service,
     update_vacancy_service,
 )
+from app.services.vacancies import get_company_info_service
 
 router = APIRouter(
     prefix="/vacancies",
@@ -183,3 +184,15 @@ async def get_job_status(job_id: str):
         }
     finally:
         await redis.aclose()
+
+@router.get(
+    "/{vacancy_id}/company-info",
+)
+async def get_company_info(
+    vacancy_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    return await get_company_info_service(
+        db=db,
+        vacancy_id=vacancy_id,
+    )

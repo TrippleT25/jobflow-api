@@ -15,6 +15,10 @@ from app.schemas.vacancy import (
     VacancyUpdate,
 )
 
+from app.integrations.company_lookup import (
+    CompanyLookupError,
+    fetch_company_website_info,
+)
 
 async def create_vacancy_service(
     db: AsyncSession,
@@ -184,3 +188,29 @@ async def delete_vacancy_service(
     )
 
     await delete_cache_pattern("vacancies:*")
+
+async def get_company_info_service(
+    db: AsyncSession,
+    vacancy_id: int,
+):
+    vacancy = await get_vacancy_service(
+        db=db,
+        vacancy_id=vacancy_id,
+    )
+
+    if not vacancy.url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Vacancy does not contain URL",
+        )
+
+    try:
+        return await fetch_company_website_info(
+            vacancy.url
+        )
+
+    except CompanyLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
