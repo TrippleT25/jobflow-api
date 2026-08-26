@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, Query, status
+from arq.jobs import Job
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.queue import create_redis_pool
+from app.schemas.job import JobQueued, JobStatusResponse
 from app.schemas.vacancy import (
     VacancyCreate,
     VacancyList,
@@ -15,7 +18,6 @@ from app.services.vacancies import (
     get_vacancy_service,
     update_vacancy_service,
 )
-from app.queue import create_redis_pool
 
 router = APIRouter(
     prefix="/vacancies",
@@ -119,6 +121,7 @@ async def delete_vacancy(
 
 @router.post(
     "/{vacancy_id}/analyze",
+    response_model=JobQueued,
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def analyze_vacancy(
@@ -132,14 +135,51 @@ async def analyze_vacancy(
 
     redis = await create_redis_pool()
 
-    job = await redis.enqueue_job(
-        "analyze_vacancy",
-        vacancy.id,
-    )
+    try:
+        job = await redis.enqueue_job(
+            "analyze_vacancy",
+            vacancy.id,
+        )
 
-    await redis.aclose()
+        if job is None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Job was not queued",
+            )
 
-    return {
-        "job_id": job.job_id,
-        "status": "queued",
-    }
+        return {
+            "job_id": job.job_id,
+            "status": "queued",
+        }
+    finally:
+        await redis.aclose()
+
+
+@router.get(
+    "/jobs/{job_id}",
+    response_model=JobStatusResponse,
+)
+async def get_job_status(job_id: str):
+    redis = await create_redis_pool()
+
+    try:
+        job = Job(
+            job_id=job_id,
+            redis=redis,
+        )
+
+        job_status = await job.status()
+        status_value = job_status.value
+
+        result = None
+
+        if status_value == "complete":
+            result = await job.result()
+
+        return {
+            "job_id": job_id,
+            "status": status_value,
+            "result": result,
+        }
+    finally:
+        await redis.aclose()
