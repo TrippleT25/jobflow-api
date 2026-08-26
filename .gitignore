@@ -10,7 +10,7 @@ htmlcov/
 .venv/
 venv/
 .env
+.env.test
 
 .idea/
 .vscode/
-
