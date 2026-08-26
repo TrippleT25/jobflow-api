@@ -8,9 +8,11 @@ from app.schemas.vacancy import VacancyCreate, VacancyUpdate
 async def create_vacancy(
     db: AsyncSession,
     data: VacancyCreate,
+    owner_id: int,
 ) -> Vacancy:
     vacancy = Vacancy(
-        **data.model_dump()
+        **data.model_dump(),
+        owner_id=owner_id,
     )
 
     db.add(vacancy)
@@ -23,6 +25,7 @@ async def create_vacancy(
 
 async def get_vacancies(
     db: AsyncSession,
+    owner_id: int,
     search: str | None = None,
     company: str | None = None,
     location: str | None = None,
@@ -31,7 +34,9 @@ async def get_vacancies(
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[Vacancy], int]:
-    statement = select(Vacancy)
+    statement = select(Vacancy).where(
+        Vacancy.owner_id == owner_id
+    )
 
     if search:
         search_pattern = f"%{search}%"
@@ -87,11 +92,18 @@ async def get_vacancies(
 async def get_vacancy_by_id(
     db: AsyncSession,
     vacancy_id: int,
+    owner_id: int | None = None,
 ) -> Vacancy | None:
-    return await db.get(
-        Vacancy,
-        vacancy_id,
+    statement = select(Vacancy).where(
+        Vacancy.id == vacancy_id
     )
+
+    if owner_id is not None:
+        statement = statement.where(
+            Vacancy.owner_id == owner_id
+        )
+
+    return await db.scalar(statement)
 
 
 async def update_vacancy(

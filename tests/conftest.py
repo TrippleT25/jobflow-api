@@ -13,6 +13,8 @@ from sqlalchemy.pool import NullPool
 
 from app.database import Base, get_db
 from app.main import app
+from app.models.user import User
+from app.routers.auth import get_current_user
 
 
 load_dotenv(".env.test")
@@ -40,11 +42,36 @@ async def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
+async def override_get_current_user() -> User:
+    return User(
+        id=1,
+        email="test@example.com",
+        hashed_password="not-used-in-tests",
+        is_active=True,
+    )
+
+
+app.dependency_overrides[
+    get_current_user
+] = override_get_current_user
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def prepare_database():
     async with test_engine.begin() as connection:
         await connection.run_sync(Base.metadata.drop_all)
         await connection.run_sync(Base.metadata.create_all)
+
+    async with TestingSessionLocal() as session:
+        session.add(
+            User(
+                id=1,
+                email="test@example.com",
+                hashed_password="not-used-in-tests",
+                is_active=True,
+            )
+        )
+        await session.commit()
 
     yield
 

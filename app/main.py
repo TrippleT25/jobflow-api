@@ -5,7 +5,7 @@ from app.logging_config import setup_logging
 from app.middleware import LoggingMiddleware, RequestIDMiddleware
 from app.routers.applications import router as applications_router
 from app.routers.vacancies import router as vacancies_router
-
+from app.routers.auth import router as auth_router
 
 setup_logging()
 
@@ -35,3 +35,4 @@ async def health_check():
 
 app.include_router(vacancies_router)
 app.include_router(applications_router)
+app.include_router(auth_router)

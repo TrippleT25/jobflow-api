@@ -23,6 +23,7 @@ from app.integrations.company_lookup import (
 async def create_vacancy_service(
     db: AsyncSession,
     data: VacancyCreate,
+    owner_id: int,
 ) -> Vacancy:
     if (
         data.salary_from is not None
@@ -37,6 +38,7 @@ async def create_vacancy_service(
     vacancy = await create_vacancy(
         db=db,
         data=data,
+        owner_id=owner_id,
     )
 
     await delete_cache_pattern("vacancies:*")
@@ -46,6 +48,7 @@ async def create_vacancy_service(
 
 async def get_vacancies_service(
     db: AsyncSession,
+    owner_id: int,
     search: str | None = None,
     company: str | None = None,
     location: str | None = None,
@@ -56,6 +59,7 @@ async def get_vacancies_service(
 ):
     cache_key = (
         "vacancies:"
+        f"owner_id={owner_id}:"
         f"search={search}:"
         f"company={company}:"
         f"location={location}:"
@@ -72,6 +76,7 @@ async def get_vacancies_service(
 
     items, total = await get_vacancies(
         db=db,
+        owner_id=owner_id,
         search=search,
         company=company,
         location=location,
@@ -115,10 +120,12 @@ async def get_vacancies_service(
 async def get_vacancy_service(
     db: AsyncSession,
     vacancy_id: int,
+    owner_id: int,
 ) -> Vacancy:
     vacancy = await get_vacancy_by_id(
         db=db,
         vacancy_id=vacancy_id,
+        owner_id=owner_id,
     )
 
     if vacancy is None:
@@ -134,10 +141,12 @@ async def update_vacancy_service(
     db: AsyncSession,
     vacancy_id: int,
     data: VacancyUpdate,
+    owner_id: int,
 ) -> Vacancy:
     vacancy = await get_vacancy_service(
         db=db,
         vacancy_id=vacancy_id,
+        owner_id=owner_id,
     )
 
     salary_from = (
@@ -176,10 +185,12 @@ async def update_vacancy_service(
 async def delete_vacancy_service(
     db: AsyncSession,
     vacancy_id: int,
+    owner_id: int,
 ) -> None:
     vacancy = await get_vacancy_service(
         db=db,
         vacancy_id=vacancy_id,
+        owner_id=owner_id,
     )
 
     await delete_vacancy(
@@ -192,10 +203,12 @@ async def delete_vacancy_service(
 async def get_company_info_service(
     db: AsyncSession,
     vacancy_id: int,
+    owner_id: int,
 ):
     vacancy = await get_vacancy_service(
         db=db,
         vacancy_id=vacancy_id,
+        owner_id=owner_id,
     )
 
     if not vacancy.url:

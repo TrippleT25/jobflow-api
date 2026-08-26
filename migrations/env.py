@@ -8,7 +8,7 @@ from alembic import context
 
 from app.config import settings
 from app.database import Base
-from app.models import Vacancy
+from app.models import Application, User, Vacancy
 
 
 config = context.config

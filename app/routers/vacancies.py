@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.models.user import User
 from app.queue import create_redis_pool
+from app.routers.auth import get_current_user
 from app.schemas.job import JobQueued, JobStatusResponse
 from app.schemas.vacancy import (
     VacancyCreate,
@@ -33,11 +35,13 @@ router = APIRouter(
 )
 async def create_vacancy(
     data: VacancyCreate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await create_vacancy_service(
         db=db,
         data=data,
+        owner_id=current_user.id,
     )
 
 
@@ -63,10 +67,12 @@ async def get_vacancies(
         default=0,
         ge=0,
     ),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await get_vacancies_service(
         db=db,
+        owner_id=current_user.id,
         search=search,
         company=company,
         location=location,
@@ -83,11 +89,13 @@ async def get_vacancies(
 )
 async def get_vacancy(
     vacancy_id: int,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await get_vacancy_service(
         db=db,
         vacancy_id=vacancy_id,
+        owner_id=current_user.id,
     )
 
 
@@ -98,12 +106,14 @@ async def get_vacancy(
 async def update_vacancy(
     vacancy_id: int,
     data: VacancyUpdate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await update_vacancy_service(
         db=db,
         vacancy_id=vacancy_id,
         data=data,
+        owner_id=current_user.id,
     )
 
 
@@ -113,11 +123,13 @@ async def update_vacancy(
 )
 async def delete_vacancy(
     vacancy_id: int,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     await delete_vacancy_service(
         db=db,
         vacancy_id=vacancy_id,
+        owner_id=current_user.id,
     )
 
 @router.post(
@@ -127,11 +139,13 @@ async def delete_vacancy(
 )
 async def analyze_vacancy(
     vacancy_id: int,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     vacancy = await get_vacancy_service(
         db=db,
         vacancy_id=vacancy_id,
+        owner_id=current_user.id,
     )
 
     redis = await create_redis_pool()
@@ -190,9 +204,11 @@ async def get_job_status(job_id: str):
 )
 async def get_company_info(
     vacancy_id: int,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     return await get_company_info_service(
         db=db,
         vacancy_id=vacancy_id,
+        owner_id=current_user.id,
     )
